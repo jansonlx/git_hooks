@@ -1,0 +1,24 @@
+#!/bin/bash -e
+# 加 hook 有可能影響 push 進度
+
+# update 腳本會為每一個提交的分支各執行一次，接收三個參數
+#ref_name=$1    # 被推送的引用（一般返回：refs/heads/遠程分支名）
+old_rev=$2    # 推送前分支的修訂版本
+new_rev=$3    # 用户準備推送的修訂版本
+
+# update hook - 拒絕加「--force」參數的推送（通常是在 rebase 遠程分支或 reset 之後）
+check_force_push()
+{
+    # 新分支的初始提交無需處理
+    if [[ ${old_rev} != '0000000000000000000000000000000000000000' ]]; then
+        # 如果遠程中被引用分支的某個提交不存在於即將推送的提交中時，可認為是加了「--force」參數
+        old_commits=`git rev-list ${new_rev}..${old_rev}`
+        if [[ ${old_commits} ]]; then
+            echo "【規範】提交失敗！Push 時不允許使用「--force」參數！"
+            exit 1
+        fi
+    fi
+}
+
+# 拒絕加「--force」參數的推送
+check_force_push
