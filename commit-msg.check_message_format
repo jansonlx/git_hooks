@@ -1,0 +1,16 @@
+#!/bin/bash -e
+# 加 hook 有可能影響 commit 進度
+
+# commit-msg 腳本會在每次 commit 前執行，接收提交日誌文件參數
+message_file=$1
+
+# commit-msg hook - 提交日誌不允許隨意填寫
+
+message=`cat ${message_file}`
+# 限制提交日誌必須超過三個非空字符或存在至少一個漢字或字母
+valid_message=`echo "${message}" | perl -CS -p -e "s/^\s*(.{1,3}|[^\p{Han}a-zA-Z]*)\s*$//g"`
+if [[ ! ${valid_message} ]]; then
+    echo "日誌內容：${message}"
+    echo "【規範】提交失敗！請認真填寫提交日誌！"
+    exit 1
+fi
