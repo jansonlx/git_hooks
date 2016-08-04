@@ -1,0 +1,79 @@
+#!/bin/bash -e
+# 加 hook 有可能影響 push 進度
+
+# update 腳本會為每一個提交的分支各執行一次，接收三個參數
+ref_name=$1    # 被推送的引用（一般返回：refs/heads/遠程分支名）
+old_rev=$2    # 推送前分支的修訂版本
+new_rev=$3    # 用户準備推送的修訂版本
+
+# update hook - 限制特定分支的合併來源
+
+# release 分支不允許從 develop 分支合併
+rule_push_release()
+{
+    # 提交中沒有任何 merge 提交時直接允許（研發人員有改 bug 需求）
+    merge_commits=`git rev-list ${old_rev}..${new_rev} --merges`
+    if [[ ${merge_commits} ]]; then
+        # 提交中存在和 develop 分支有相同提交時拒絕
+        new_commits=`git rev-list ${old_rev}..${new_rev}`
+        develop_commits=`git rev-list develop`
+        for commit_id in ${new_commits}
+        do
+            echo ${develop_commits} | grep ${commit_id} >/dev/null
+            if [[ $? == 0 ]]; then
+                echo "【規範】提交失敗！不允許從 develop 分支合併！"
+                exit 1
+            fi
+        done
+    fi
+}
+
+# master 分支只允許從 release 或 hotfix 分支合併
+rule_push_master()
+{
+    # 獲取用户準備推送的提交的父提交
+    parent2_rev=`git rev-list ${new_rev} -1 --parents | egrep -o '[0-9a-z]{40}$'`
+    # 獲取當前遠程 release 和 hotfix 分支的最新提交
+    release_rev=`git rev-list release -1 2>/dev/null || echo ""`
+    hotfix_rev=`git rev-list hotfix -1 2>/dev/null || echo ""`
+    # 僅當該父提交等於 release 或 hotfix 分支的最新提交才是正常情況
+    if [[ ${parent2_rev} != ${release_rev} && ${parent2_rev} != ${hotfix_rev} ]]; then
+        echo "【規範】提交失敗！master 分支只允許從 release 或 hotfix 分支合併"
+        exit 1
+    fi
+}
+
+# hotfix 分支不允許從 develop、release 分支合併
+rule_push_hotfix()
+{
+    # 提交中沒有任何 merge 提交時直接允許（研發人員有改 bug 需求）
+    merge_commits=`git rev-list ${old_rev}..${new_rev} --merges`
+    if [[ ${merge_commits} ]]; then
+        # 提交中存在和 develop 或 release 分支有相同提交時拒絕
+        new_commits=`git rev-list ${old_rev}..${new_rev}`
+        develop_commits=`git rev-list develop`
+        release_commits=`git rev-list release`
+        for commit_id in ${new_commits}
+        do
+            echo ${develop_commits} | grep ${commit_id} >/dev/null
+            if [[ $? == 0 ]]; then
+                echo "【規範】提交失敗！不允許從 develop 分支合併！"
+                exit 1
+            fi
+            echo ${release_commits} | grep ${commit_id} >/dev/null
+            if [[ $? == 0 ]]; then
+                echo "【規範】提交失敗！不允許從 release 分支合併！"
+                exit 1
+            fi
+        done
+    fi    
+}
+
+# 推送特定分支時限制合併來源（如是新分支的初始提交則無需處理）
+if [[ ${ref_name} == 'refs/heads/release' && ${old_rev} != '0000000000000000000000000000000000000000' ]]; then
+    rule_push_release
+elif [[ ${ref_name} == 'refs/heads/master' && ${old_rev} != '0000000000000000000000000000000000000000' ]]; then
+    rule_push_master
+elif [[ ${ref_name} == 'refs/heads/hotfix' && ${old_rev} != '0000000000000000000000000000000000000000' ]]; then
+    rule_push_hotfix
+fi
