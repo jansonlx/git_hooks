@@ -1,0 +1,41 @@
+#!/bin/bash -e
+# 加 hook 有可能影響 push 進度
+
+# update 腳本會為每一個提交的分支各執行一次，接收三個參數
+ref_name=$1    # 被推送的引用（一般返回：refs/heads/遠程分支名）
+old_rev=$2    # 推送前分支的修訂版本
+new_rev=$3    # 用户準備推送的修訂版本
+
+# update hook - 提交日誌不允許隨意填寫
+check_message_format()
+{
+    # 獲取準備推送到遠程的所有提交
+    # 新分支的初始提交為「0000000000000000000000000000000000000000」
+    if [[ ${old_rev} != '0000000000000000000000000000000000000000' ]]; then
+        new_commits=`git rev-list ${old_rev}..${new_rev}`
+    else
+        new_commits=`git rev-list ${new_rev}`
+    fi
+    # 判斷每個節點的提交日誌
+    for commit_id in ${new_commits}
+    do
+        # 如果該提交已經存在其他遠程分支中則退出循環（這裏考慮從其他遠程分支 checkout 出來的分支提交時，該遠程分支的提交日誌不再做驗證）
+        history_commit=`git branch -a --contains ${commit_id} 2>/dev/null || echo ""`
+        if [[ ${history_commit} ]]; then
+            break
+        fi
+        # 「1,/^$/d」獲取第一個空行之後的內容（這裏即提交日誌）
+        message=`git cat-file commit ${commit_id} | sed '1,/^$/d'`
+        # 限制提交日誌必須超過三個非空字符或存在至少一個漢字或字母
+        # 備註：使用 perl 是因為 [一-龠] 這種方式在腳本裏有匹配不正確的情況（Mac 終端裏命令測試又正常），[\u4E00-\u9FFF] 這個在服務器上測試時提示「Invalid range end」（Mac 也無效）;另外，無需更嚴謹，需要判斷日誌內容多行時情況（目前這個是每一行獨立判斷）
+        valid_message=`echo "${message}" | perl -CS -p -e "s/^\s*(.{1,3}|[^\p{Han}a-zA-Z]*)\s*$//g"`
+        if [[ ! ${valid_message} ]]; then
+            echo "日誌內容：${message}"
+            echo "【規範】提交失敗！請認真填寫提交日誌（所有新提交的日誌）！"
+            exit 1
+        fi
+    done
+}
+
+# 提交日誌不允許隨意填寫
+check_message_format
