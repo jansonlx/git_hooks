@@ -1,0 +1,25 @@
+#!/bin/bash -e
+# 加 hook 有可能影響 push 進度
+
+# update 腳本會為每一個提交的分支各執行一次，接收三個參數
+ref_name=$1    # 被推送的引用（一般返回：refs/heads/遠程分支名）
+old_rev=$2    # 推送前分支的修訂版本
+new_rev=$3    # 用户準備推送的修訂版本
+
+# update hook - 僅指定用户可推送特定分支
+check_commit_author()
+{
+    commit_author=`git log ${new_rev} -1 --pretty='%ce'`
+    if [[ ${commit_author} != ${vip_author} ]]; then
+        echo '【規範】提交失敗！當前用户無權限推送此分支！'
+        exit 1
+    fi
+}
+
+vip_author='xxx@yyy.zzz'    # 指定有權限操作特定分支的用户
+# 後續考慮處理成列表添加多個用户
+
+# 僅指定用户可推送 master 分支（初始提交則無需處理）
+if [[ ${ref_name} == 'refs/heads/master' && ${old_rev} != '0000000000000000000000000000000000000000' ]]; then
+    check_commit_author
+fi
