@@ -15,6 +15,7 @@
 # 日誌：
 #     08 Dec 2016
 #         * 修正「hooks」目錄的路徑（倉庫名後缺少了「.git」）
+#         * 修正「hooks」目錄的路徑（缺少了「hooks」這一層）
 #     08 Dec 2016
 #         + 第一版
 # 説明：
@@ -55,7 +56,7 @@ copy_to_hooks()
 {
     for repo in $1
     do
-        \cp $2 ${gogs_path}/${repo}.git/update 2>/dev/null && echo "[Info] Updated file '${repo}.git/update.'" \
+        \cp $2 ${gogs_path}/${repo}.git/hooks/update 2>/dev/null && echo "[Info] Updated file '${repo}.git/hooks/update.'" \
             || { echo "[Error] Directory '${gogs_path}/${repo}.git' doesn't exist."; if_fail=1; }
     done
 }
