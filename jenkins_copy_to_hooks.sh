@@ -14,6 +14,8 @@
 # 版本： v161208
 # 日誌：
 #     08 Dec 2016
+#         * 修正「hooks」目錄的路徑（倉庫名後缺少了「.git」）
+#     08 Dec 2016
 #         + 第一版
 # 説明：
 #     對 Jenkins 項目進行參數化，分別配置一個 Choice Parameter「repo_name」，
@@ -53,8 +55,8 @@ copy_to_hooks()
 {
     for repo in $1
     do
-        \cp $2 ${gogs_path}/${repo}/update 2>/dev/null && echo "[Info] Updated file '${repo}/update.'" \
-            || { echo "[Error] Directory '${gogs_path}/${repo}' doesn't exist."; if_fail=1; }
+        \cp $2 ${gogs_path}/${repo}.git/update 2>/dev/null && echo "[Info] Updated file '${repo}.git/update.'" \
+            || { echo "[Error] Directory '${gogs_path}/${repo}.git' doesn't exist."; if_fail=1; }
     done
 }
 
