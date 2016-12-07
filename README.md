@@ -17,6 +17,18 @@ commit-msg.* 文件在實際使用中需要把文件名修改成「commit-msg」
 
 ## 目錄簡單説明
 
+* 【更新 - 07 Dec 2016】update.sh
+
+update hook - 本倉庫下幾個 update hook 進行了重構，每塊功能使用函數方便後續調用，目前功能包括了：  
+
+  1. 指定分支禁止強制推送  
+  2. 指定分支禁止刪除  
+  3. 指定分支禁止 merge 特定分支  
+  4. 指定分支只允許 merge 操作（且只能 merge 特定分支）  
+  5. 非指定提交者限制合併特定分支  
+  6. 禁止刪除標籤  
+  7. 禁止覆蓋標籤
+
 * update.rule_push_branch
 
 update hook - 限制特定分支的合併來源
