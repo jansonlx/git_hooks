@@ -61,10 +61,10 @@ hook_useful="update.useful.sh"
 # 初始 update hook 腳本
 hook_useless="update.useless.sh"
 # 可供操作的 Git 版本庫（需要包括所屬組織或用户名）
-all_repos=" \
-    google/fonts \
-    macvim-dev/macvim \
-    "
+all_repos="
+google/fonts
+macvim-dev/macvim
+"
 
 
 # 進入指定目錄後獲取最新腳本
